@@ -14,6 +14,11 @@ import org.springframework.stereotype.Service;
 
 import com.example.AmazonHTMLParser.model.ProductDetails;
 import com.example.AmazonHTMLParser.model.SellerOfferDetail;
+import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.DomElement;
+import com.gargoylesoftware.htmlunit.html.HtmlForm;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 
 @Service
 public class AmazonHTMLParsorService {
@@ -34,7 +39,24 @@ public class AmazonHTMLParsorService {
 		productDetails.setBrand(brandNameEle.html());
 		productDetails.setASIN(ASINEle.attr("value"));
 		productDetails.setPrice(priceElement.html());
-		productDetails.setIncartprice(priceElement.html());
+		try{
+		WebClient webClient = new WebClient();
+		webClient.getOptions().setUseInsecureSSL(true);
+		
+        HtmlPage page = webClient.getPage(url);
+        final HtmlForm form1 = (HtmlForm) page.getForms().get(1);
+        final HtmlSubmitInput button = form1.getInputByName("submit.add-to-cart");
+        final HtmlPage page2 = button.click();
+        DomElement elementById = page2.getElementById("huc-v2-order-row-center-inner");
+        String nodeContent = elementById.getTextContent().trim();
+        System.out.println("mine is"+nodeContent);
+        System.out.println("mine length is"+nodeContent.length());
+        String newContent = nodeContent.substring(nodeContent.indexOf("Cart subtotal (1 item):")+"Cart subtotal (1 item):".length()+3, nodeContent.length());
+        productDetails.setIncartprice(newContent.trim());
+		}catch(Exception e){
+			productDetails.setIncartprice(priceElement.html());
+        	logger.error("Unable to parse URL from sending to next page: "+url,e);
+        }
 		int pageNumber = 1;
 		while(true){
 			
@@ -62,8 +84,8 @@ public class AmazonHTMLParsorService {
 		
 		Elements divElements = sellersURLDoc.select("div[role='row']");
 		Elements divElementsForNext =  sellersURLDoc.getElementsByClass("a-last");
-		String divElementsForNextClassName = divElementsForNext.first().attr("class");
-		System.out.println("divElementsForNextClassName is"+divElementsForNextClassName);
+		
+		
 		
 		for(Element divElementForSeller:divElements){
 			sellerOfferDetail = new SellerOfferDetail();
@@ -96,10 +118,17 @@ public class AmazonHTMLParsorService {
 			}
 		}
 		
-		if(divElementsForNextClassName.contains("a-disabled")){
-			System.out.println("Comes here");
+		if(divElementsForNext != null && divElementsForNext.first() != null){
+			String divElementsForNextClassName = divElementsForNext.first().attr("class");
+			System.out.println("divElementsForNextClassName is"+divElementsForNextClassName);
+			if(divElementsForNextClassName.contains("a-disabled")){
+				System.out.println("Comes here");
+				endOfResults = true;
+			}
+		}else{
 			endOfResults = true;
 		}
+		
 		return endOfResults;
 	}
 	

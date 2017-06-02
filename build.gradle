@@ -25,5 +25,9 @@ repositories {
 dependencies {
 	compile('org.springframework.boot:spring-boot-starter-web')
 	compile 'org.jsoup:jsoup:1.10.2'
+// https://mvnrepository.com/artifact/net.sourceforge.htmlunit/htmlunit
+compile group: 'net.sourceforge.htmlunit', name: 'htmlunit', version: '2.26'
+
+	
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 }
