@@ -42,7 +42,10 @@ public class AmazonHTMLParsorService {
 		try{
 		WebClient webClient = new WebClient();
 		webClient.getOptions().setUseInsecureSSL(true);
-		
+		webClient.getOptions().setCssEnabled(false);//if you don't need css
+		webClient.getOptions().setJavaScriptEnabled(false);//if you don't need js
+		webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+		webClient.getOptions().setThrowExceptionOnScriptError(false);
         HtmlPage page = webClient.getPage(url);
         final HtmlForm form1 = (HtmlForm) page.getForms().get(1);
         final HtmlSubmitInput button = form1.getInputByName("submit.add-to-cart");
