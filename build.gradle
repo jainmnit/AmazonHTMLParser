@@ -28,6 +28,8 @@ dependencies {
 // https://mvnrepository.com/artifact/net.sourceforge.htmlunit/htmlunit
 compile group: 'net.sourceforge.htmlunit', name: 'htmlunit', version: '2.26'
 
+	// https://mvnrepository.com/artifact/us.codecraft/xsoup
+compile group: 'us.codecraft', name: 'xsoup', version: '0.3.1'
 	
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 }
