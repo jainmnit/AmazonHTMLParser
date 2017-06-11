@@ -1,10 +1,12 @@
-package com.example.AmazonHTMLParser.model;
+package com.example.HTMLParser.model;
 
 public class SellerOfferDetail {
 	private String sellerName;
 	private String sellerId;
 	private String condition;
 	private String price;
+	private String sellerProductURL;
+	private String sellerFQDN;
 	public String getSellerName() {
 		return sellerName;
 	}
@@ -28,5 +30,17 @@ public class SellerOfferDetail {
 	}
 	public void setPrice(String price) {
 		this.price = price;
+	}
+	public String getSellerProductURL() {
+		return sellerProductURL;
+	}
+	public void setSellerProductURL(String sellerProductURL) {
+		this.sellerProductURL = sellerProductURL;
+	}
+	public String getSellerFQDN() {
+		return sellerFQDN;
+	}
+	public void setSellerFQDN(String sellerFQDN) {
+		this.sellerFQDN = sellerFQDN;
 	}
 }

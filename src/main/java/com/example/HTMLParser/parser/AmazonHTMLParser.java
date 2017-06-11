@@ -1,4 +1,4 @@
-package com.example.AmazonHTMLParser.service;
+package com.example.HTMLParser.parser;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,10 +13,10 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-import com.example.AmazonHTMLParser.model.ProductDetails;
-import com.example.AmazonHTMLParser.model.SellerOfferDetail;
+import com.example.HTMLParser.model.ProductDetails;
+import com.example.HTMLParser.model.SellerOfferDetail;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
@@ -25,22 +25,26 @@ import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 
 import us.codecraft.xsoup.Xsoup;
 
-@Service
-public class AmazonHTMLParsorService {
-	public static Logger logger = LoggerFactory.getLogger(AmazonHTMLParsorService.class);
-
+@Component
+public class AmazonHTMLParser implements HTMLParser{
 	
-	public ProductDetails getDetails(String url) {
+	public static Logger logger = LoggerFactory.getLogger(AmazonHTMLParser.class);
+
+	@Override
+	public ProductDetails getProductDetails(String url) {
+
 		ProductDetails productDetails = new ProductDetails();
 		List<SellerOfferDetail> sellerOfferDetails = new ArrayList<SellerOfferDetail>();
 		//productDetails.setSellerOfferDetails(new ArrayList<SellerOfferDetail>());
 		try{
+			System.out.println(url);
 		Document doc = Jsoup.connect(url).get();
 		Element productTitleEle = doc.select("span#productTitle").first();
 		Element brandNameEle = doc.select("a#brand").first();
 		Element ASINEle = doc.select("input[id=ASIN]").first();
 		Element priceElement = doc.select("span#priceblock_ourprice").first();
 		String hrefSeller= Xsoup.compile("//div[@id='olp_feature_div']/div/span/a/@href").evaluate(doc).get();
+		System.out.println(hrefSeller);
 		productDetails.setName(productTitleEle.html());
 		productDetails.setBrand(brandNameEle.html());
 		productDetails.setASIN(ASINEle.attr("value"));
@@ -64,15 +68,20 @@ public class AmazonHTMLParsorService {
 			productDetails.setIncartprice(priceElement.html());
         	logger.error("Unable to parse URL from sending to next page: "+url,e);
         }
+		System.out.println("Comes here");
 		getSellerInfo(hrefSeller,sellerOfferDetails);
 		}catch(Exception e){
 			logger.error("Unable to parse URL: "+url,e);
 		}
 		productDetails.setSellerOfferDetails(sellerOfferDetails);
 		return productDetails;
+	
 	}
 	
 	private void getSellerInfo(String sellerOfferPageURL, List<SellerOfferDetail> sellerOfferDetails) throws IOException {
+		if(sellerOfferPageURL == null){
+			return;
+		}
 		sellerOfferPageURL = "https://www.amazon.com"+sellerOfferPageURL;
 		Document sellersURLDoc = Jsoup.connect(sellerOfferPageURL).get();
 		System.out.println(sellerOfferPageURL);
@@ -91,7 +100,7 @@ public class AmazonHTMLParsorService {
 			}
 		}
 	}
-
+	
 	private void getDetails(List<SellerOfferDetail> sellerOfferDetails, Document sellersURLDoc) {
 		SellerOfferDetail sellerOfferDetail;
 		Elements divElements = sellersURLDoc.select("div[role='row']");
@@ -124,7 +133,6 @@ public class AmazonHTMLParsorService {
 		}
 	}
 	
-	
 	public static Map<String, String> getQueryMap(String query)  
 	{  
 	    String[] params = query.split("&");  
@@ -137,5 +145,5 @@ public class AmazonHTMLParsorService {
 	    }  
 	    return map;  
 	}
-	
+
 }

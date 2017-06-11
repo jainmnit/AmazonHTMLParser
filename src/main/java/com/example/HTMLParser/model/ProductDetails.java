@@ -1,4 +1,4 @@
-package com.example.AmazonHTMLParser.model;
+package com.example.HTMLParser.model;
 
 import java.util.List;
 
@@ -52,11 +52,38 @@ public class ProductDetails {
 		this.sellerOfferDetails = sellerOfferDetails;
 	}
 
+	public String getPartNumber() {
+		return partNumber;
+	}
+
+	public void setPartNumber(String partNumber) {
+		this.partNumber = partNumber;
+	}
+
+	public String getGTIN() {
+		return GTIN;
+	}
+
+	public void setGTIN(String gTIN) {
+		GTIN = gTIN;
+	}
+
+	public String getImageURL() {
+		return imageURL;
+	}
+
+	public void setImageURL(String imageURL) {
+		this.imageURL = imageURL;
+	}
+
 	private String name;
 	private String brand;
 	private String ASIN;
 	private String price;
 	private String  incartprice;
+	private String  partNumber;
+	private String  GTIN;
+	private String imageURL;
 	
 	private List<SellerOfferDetail> sellerOfferDetails;
 	
