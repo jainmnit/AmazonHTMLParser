@@ -13,6 +13,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 import com.example.HTMLParser.model.ProductDetails;
@@ -20,13 +22,61 @@ import com.example.HTMLParser.model.SellerOfferDetail;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import com.gargoylesoftware.htmlunit.html.HtmlSpan;
 import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 
 import us.codecraft.xsoup.Xsoup;
 
 @Component
+@PropertySource("classpath:amazon.properties")
 public class AmazonHTMLParser implements HTMLParser{
+	
+	@Value("${amazon.productName}")
+	private String productNameVar;
+	
+	@Value("${amazon.brandName}")
+	private String brandNameVar;
+	
+	@Value("${amazon.asin}")
+	private String asinVar;
+	
+	@Value("${amazon.price}")
+	private String priceVar;
+	
+	@Value("${amazon.hrefSeller}")
+	private String hrefSellerVar;
+	
+	@Value("${amazon.formInput}")
+	private String formInputVar;
+	
+	@Value("${amazon.incartPrice}")
+	private String incartPriceVar;
+	
+	@Value("${amazon.nextPageExist}")
+	private String nextPageExist;
+	
+	@Value("${amazon.nextPageURL}")
+	private String nextPageURL;
+	
+	@Value("${amazon.eachSellerInfo}")
+	private String eachSellerInfo;
+	
+	@Value("${amazon.priceSeller}")
+	private String priceSellerVar;
+	
+	@Value("${amazon.conditionSeller}")
+	private String conditionSellerVar;
+	
+	@Value("${amazon.sellerName}")
+	private String sellerNameVar;
+	
+	@Value("${amazon.hrefSellerindividual}")
+	private String hrefSellerindividualVar;
+	
+	@Value("${amazon.sellersDiv}")
+	private String sellersDiv;
+	
+	
+	
 	
 	public static Logger logger = LoggerFactory.getLogger(AmazonHTMLParser.class);
 
@@ -39,16 +89,16 @@ public class AmazonHTMLParser implements HTMLParser{
 		try{
 			System.out.println(url);
 		Document doc = Jsoup.connect(url).get();
-		Element productTitleEle = doc.select("span#productTitle").first();
-		Element brandNameEle = doc.select("a#brand").first();
-		Element ASINEle = doc.select("input[id=ASIN]").first();
-		Element priceElement = doc.select("span#priceblock_ourprice").first();
-		String hrefSeller= Xsoup.compile("//div[@id='olp_feature_div']/div/span/a/@href").evaluate(doc).get();
+		String productName = Xsoup.compile(productNameVar).evaluate(doc).get();
+		String brandName = Xsoup.compile(brandNameVar).evaluate(doc).get();
+		String asinValue =  Xsoup.compile(asinVar).evaluate(doc).get();
+		String price = Xsoup.compile(priceVar).evaluate(doc).get();
+		String hrefSeller= Xsoup.compile(hrefSellerVar).evaluate(doc).get();
 		System.out.println(hrefSeller);
-		productDetails.setName(productTitleEle.html());
-		productDetails.setBrand(brandNameEle.html());
-		productDetails.setASIN(ASINEle.attr("value"));
-		productDetails.setPrice(priceElement.html());
+		productDetails.setName(productName);
+		productDetails.setBrand(brandName);
+		productDetails.setASIN(asinValue);
+		productDetails.setPrice(price);
 		try{
 		WebClient webClient = new WebClient();
 		webClient.getOptions().setUseInsecureSSL(true);
@@ -60,12 +110,12 @@ public class AmazonHTMLParser implements HTMLParser{
 		webClient.getOptions().setAppletEnabled(false);
         HtmlPage page = webClient.getPage(url);
         final HtmlForm form1 = (HtmlForm) page.getForms().get(1);
-        final HtmlSubmitInput button = form1.getInputByName("submit.add-to-cart");
+        final HtmlSubmitInput button = form1.getInputByName(formInputVar);
         final HtmlPage page2 = button.click();
-        final HtmlSpan elementById = (HtmlSpan)page2.getByXPath("//div[@id='huc-v2-order-row-center-inner']/div/div/div/div/span/span").get(1);
-        productDetails.setIncartprice(elementById.getTextContent());
+        String incartPrice = page2.getFirstByXPath(incartPriceVar);
+        productDetails.setIncartprice(incartPrice);
 		}catch(Exception e){
-			productDetails.setIncartprice(priceElement.html());
+			productDetails.setIncartprice(price);
         	logger.error("Unable to parse URL from sending to next page: "+url,e);
         }
 		System.out.println("Comes here");
@@ -85,9 +135,8 @@ public class AmazonHTMLParser implements HTMLParser{
 		sellerOfferPageURL = "https://www.amazon.com"+sellerOfferPageURL;
 		Document sellersURLDoc = Jsoup.connect(sellerOfferPageURL).get();
 		System.out.println(sellerOfferPageURL);
-		Elements divElementsForNext =  Xsoup.compile("//li[contains(@class, 'a-last') and contains(@class, 'a-disabled')]").evaluate(sellersURLDoc).getElements();
-		
-		String nextPage = Xsoup.compile("//li[@class='a-last']/a/@href").evaluate(sellersURLDoc).get();
+		Elements divElementsForNext =  Xsoup.compile(nextPageExist).evaluate(sellersURLDoc).getElements();
+		String nextPage = Xsoup.compile(nextPageURL).evaluate(sellersURLDoc).get();
 		getDetails(sellerOfferDetails, sellersURLDoc);
 		
 		if(divElementsForNext != null && divElementsForNext.size() >0){
@@ -103,19 +152,15 @@ public class AmazonHTMLParser implements HTMLParser{
 	
 	private void getDetails(List<SellerOfferDetail> sellerOfferDetails, Document sellersURLDoc) {
 		SellerOfferDetail sellerOfferDetail;
-		Elements divElements = sellersURLDoc.select("div[role='row']");
-		
-		
-		sellersURLDoc.getElementsByClass("a-last");
-		
+		Elements divElements = sellersURLDoc.select(sellersDiv);
 		for(Element divElementForSeller:divElements){
 			sellerOfferDetail = new SellerOfferDetail();
-			Elements gridElements = divElementForSeller.select("div[role='gridcell']");
+			Elements gridElements = divElementForSeller.select(eachSellerInfo);
 			for(Element gridElementForSeller:gridElements){
-				String priceSeller= Xsoup.compile("//span[contains(@class, 'Price')]/text()").evaluate(gridElementForSeller).get();
-				String cnditionSeller= Xsoup.compile("//span[contains(@class, 'Condition')]/text()").evaluate(gridElementForSeller).get();
-				String sellerName= Xsoup.compile("//h3[contains(@class, 'Seller')]/span/a/text()").evaluate(gridElementForSeller).get();
-				String hrefSeller= Xsoup.compile("//h3[contains(@class, 'Seller')]/span/a/@href").evaluate(gridElementForSeller).get();
+				String priceSeller= Xsoup.compile(priceSellerVar).evaluate(gridElementForSeller).get();
+				String cnditionSeller= Xsoup.compile(conditionSellerVar).evaluate(gridElementForSeller).get();
+				String sellerName= Xsoup.compile(sellerNameVar).evaluate(gridElementForSeller).get();
+				String hrefSeller= Xsoup.compile(hrefSellerindividualVar).evaluate(gridElementForSeller).get();
 				if(StringUtils.isNoneEmpty(priceSeller)){
 					sellerOfferDetails.add(sellerOfferDetail);
 					sellerOfferDetail.setPrice(priceSeller);

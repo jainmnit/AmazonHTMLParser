@@ -9,15 +9,40 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 import com.example.HTMLParser.model.ProductDetails;
 import com.example.HTMLParser.model.SellerOfferDetail;
+import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import us.codecraft.xsoup.Xsoup;
 
 @Component
+@PropertySource("classpath:walmart.properties")
 public class WalMartHTMLParser implements HTMLParser{
+	
+	@Value("${walmart.productName}")
+	private String productNameVar;
+	
+	
+	@Value("${walmart.imgProduct}")
+	private String imgProductVar;
+	
+	@Value("${walmart.price}")
+	private String priceVar;
+	
+	@Value("${walmart.productConfigTable}")
+	private String productConfigTable;
+	
+	@Value("${walmart.productConfigValue}")
+	private String productConfigValue;
+	
+	@Value("${walmart.productConfigName}")
+	private String productConfigName;
+
 	
 	public static Logger logger = LoggerFactory.getLogger(WalMartHTMLParser.class);
 
@@ -30,15 +55,22 @@ public class WalMartHTMLParser implements HTMLParser{
 		try{
 			System.out.println(url);
 		Document doc = Jsoup.connect(url).get();
-		String productTitle = Xsoup.compile("//h1[contains(@class,'ProductTitle')]/div/text()").evaluate(doc).get();
+		WebClient webClient = new WebClient();
+		webClient.getOptions().setUseInsecureSSL(true);
+		webClient.getOptions().setCssEnabled(false);//if you don't need css
+		webClient.getOptions().setJavaScriptEnabled(false);//if you don't need js
+		webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+		webClient.getOptions().setThrowExceptionOnScriptError(false);
+		webClient.getOptions().setActiveXNative(false);
+		webClient.getOptions().setAppletEnabled(false);
+        HtmlPage page = webClient.getPage(url);
+		String productTitle = page.getFirstByXPath(productNameVar);
 		productDetails.setName(productTitle);
 		
-		String currency  = Xsoup.compile("//div[@class='prod-PriceHero']/span/span/span[@class='Price-group']/span[@class='Price-currency']/text()").evaluate(doc).get();
+		String price  = page.getFirstByXPath(priceVar);
 		
-		String price = Xsoup.compile("//div[@class='prod-PriceHero']/span/span/span[@class='Price-group']/span[@class='Price-characteristic']/text()").evaluate(doc).get();
-		String mantissa = Xsoup.compile("//div[@class='prod-PriceHero']/span/span/span[@class='Price-group']/span[@class='Price-mantissa']/text()").evaluate(doc).get();
-		productDetails.setPrice(currency+price+"."+mantissa);
-		String imgSrc = Xsoup.compile("//img[contains(@class,'prod-HeroImage-image')]/@src").evaluate(doc).get();
+		productDetails.setPrice(price);
+		String imgSrc = page.getFirstByXPath(imgProductVar);
 		productDetails.setImageURL(imgSrc);
 		getWalmartBrandInfo(productDetails,doc);
 		}catch(Exception e){
@@ -50,11 +82,11 @@ public class WalMartHTMLParser implements HTMLParser{
 	}
 	
 	private void getWalmartBrandInfo(ProductDetails productDetails, Document doc) {
-		Elements rowElements = Xsoup.compile("//div[@class='Specifications']/div/div/div/div/table/tbody/tr").evaluate(doc).getElements();
+		Elements rowElements = Xsoup.compile(productConfigTable).evaluate(doc).getElements();
 		for (Element element : rowElements) {
-			String specsName = Xsoup.compile("//td[contains(@class, 'name')]/text()").evaluate(element).get();
+			String specsName = Xsoup.compile(productConfigName).evaluate(element).get();
 			System.out.println("specsName is"+specsName);
-			String specsValue = Xsoup.compile("//td[contains(@class, 'value')]/div/text()").evaluate(element).get();
+			String specsValue = Xsoup.compile(productConfigValue).evaluate(element).get();
 			if("Brand".equals(specsName)){
 				productDetails.setBrand(specsValue);
 			}
